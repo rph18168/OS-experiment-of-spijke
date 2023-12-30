@@ -14,8 +14,46 @@
 #include "vmm.h"
 #include "sched.h"
 #include "proc_file.h"
+#include "vfs.h"
 
 #include "spike_interface/spike_utils.h"
+
+void get_dentry_name(struct dentry *cwd, char *pathpa, uint64 *pos){
+  if(cwd == NULL)
+    return;
+  else
+    get_dentry_name(cwd->parent, pathpa, pos);
+  uint64 i = 0;
+  while (cwd->name[i] != '\0')
+  {
+    pathpa[*pos] = cwd->name[i];
+    (*pos)++;
+    i++;
+  }
+  return;
+}
+
+void get_whole_path(char* pathpa, char* path){
+  if(pathpa[0] != '.')
+    memcpy(path, pathpa, sizeof(pathpa));
+  else{
+    uint64 pos = 0, i;
+    if(pathpa[1] == '.'){
+      i = 2;
+      get_dentry_name(current->pfiles->cwd->parent, path, &pos);
+    }     
+    else{
+      i = 1;
+      get_dentry_name(current->pfiles->cwd, path, &pos);
+    }  
+    while(pathpa[i] != '\0'){
+      path[pos] = pathpa[i];
+      ++pos;
+      ++i;
+    }
+    path[pos] = '\0';
+  }
+}
 
 //
 // implement the SYS_user_print syscall
@@ -101,7 +139,9 @@ ssize_t sys_user_yield() {
 //
 ssize_t sys_user_open(char *pathva, int flags) {
   char* pathpa = (char*)user_va_to_pa((pagetable_t)(current->pagetable), pathva);
-  return do_open(pathpa, flags);
+  char path[30];
+  get_whole_path(pathpa, path);
+  return do_open(path, flags);
 }
 
 //
@@ -215,6 +255,44 @@ ssize_t sys_user_unlink(char * vfn){
 }
 
 //
+// @lab4_challenge_1: for pwd()
+//
+
+ssize_t sys_user_rcwd(char* pathva){
+  char* pathpa = (char*)user_va_to_pa((pagetable_t)(current->pagetable), pathva);
+  uint64 pos = 0;
+  get_dentry_name(current->pfiles->cwd, pathpa, &pos);
+  pathpa[pos] = '\0';
+  // char path[30] = "abc";
+  // if(current->pfiles->cwd->parent == NULL)
+  //   sprint(path);
+  return 0;
+}
+
+//
+// @lab4_challenge_1: for cd()
+//
+
+ssize_t sys_user_ccwd(char* pathva){
+  char* pathpa = (char*)user_va_to_pa((pagetable_t)(current->pagetable), pathva);
+  char path[30];
+
+  get_whole_path(pathpa, path);
+
+  struct dentry *parent = vfs_root_dentry;
+  char miss_name[MAX_PATH_LEN];
+
+  // lookup the dir
+  struct dentry *file_dentry = lookup_final_dentry(path, &parent, miss_name);
+
+  if (!file_dentry || file_dentry->dentry_inode->type != DIR_I) 
+    panic("cannot find the directory!\n");
+  
+  current->pfiles->cwd = file_dentry;
+
+  return 0;
+}
+//
 // [a0]: the syscall number; [a1] ... [a7]: arguments to the syscalls.
 // returns the code of success, (e.g., 0 means success, fail for otherwise)
 //
@@ -262,6 +340,10 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, long a6, l
       return sys_user_link((char *)a1, (char *)a2);
     case SYS_user_unlink:
       return sys_user_unlink((char *)a1);
+    case SYS_user_rcwd:
+      return sys_user_rcwd((char *)a1);
+    case SYS_user_ccwd:
+      return sys_user_ccwd((char*)a1);
     default:
       panic("Unknown syscall %ld \n", a0);
   }
