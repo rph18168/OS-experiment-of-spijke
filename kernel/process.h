@@ -109,10 +109,8 @@ int do_fork(process* parent);
 uint64 get_parent(uint64 pid);
 // check if there is active child
 uint64 has_active_child(uint64 pid);
-// for wait
-void insert_to_block_queue(process* proc);
 
 // current running process
 extern process* current;
 
-#endif
+#endif 

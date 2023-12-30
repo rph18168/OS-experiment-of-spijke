@@ -32,34 +32,6 @@ process procs[NPROC];
 // current points to the currently running user-mode application.
 process* current = NULL;
 
-process* block_queue_head = NULL;
-
-// insert a process, proc, into the END of block queue.
-void insert_to_block_queue(process* proc) {
-  // sprint( "going to insert process %d to block queue.\n", proc->pid );
-  // if the queue is empty in the beginning
-  if( block_queue_head == NULL ){
-    proc->status = BLOCKED;
-    proc->queue_next = NULL;
-    block_queue_head = proc;
-    return;
-  }
-
-  // block queue is not empty
-  process *p;
-  // browse the block queue to see if proc is already in-queue
-  for( p=block_queue_head; p->queue_next!=NULL; p=p->queue_next )
-    if( p == proc ) return;  //already in queue
-
-  // p points to the last element of the ready queue
-  if( p==proc ) return;
-  p->queue_next = proc;
-  proc->status = BLOCKED;
-  proc->queue_next = NULL;
-
-  return;
-}
-
 //
 // switch to a user-mode process
 //
@@ -93,11 +65,6 @@ void switch_to(process* proc) {
   // make user page table. macro MAKE_SATP is defined in kernel/riscv.h. added @lab2_1
   uint64 user_satp = MAKE_SATP(proc->pagetable);
 
-  // check if return to wait()
-  if(proc->wait_for > 0) {
-    proc->trapframe->regs.a0 = proc->wait_for;
-    proc->wait_for = 0;
-  }
   // return_to_user() is defined in kernel/strap_vector.S. switch to user mode with sret.
   // note, return_to_user takes two parameters @ and after lab2_1.
   return_to_user(proc->trapframe, user_satp);
@@ -307,13 +274,13 @@ uint64 get_parent(uint64 pid) {
 }
 
 uint64 has_active_child(uint64 pid) {
-  uint64 has = 0;
+  uint64 child = -1;
   for(int i=0;i<NPROC;i++) {
     if(procs[i].status == READY && procs[i].parent->pid == pid) {
-      has = 1;
+      child = procs[i].pid;
       break;
     }
   }
   //sprint("\ndebug has:%d\n",has);
-  return has;
+  return child;
 }

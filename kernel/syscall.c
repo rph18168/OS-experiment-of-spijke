@@ -98,16 +98,17 @@ ssize_t sys_user_yield() {
 // kernel entry point of wait. added @lab3_challenge_1
 //
 uint64 sys_user_wait(uint64 pid) {
-  if(pid == -1 && has_active_child(current->pid)) {
-    current->wait_for = -1;
+  uint64 child;
+  if(pid == -1 && (child = has_active_child(current->pid)) != -1) {
+    current->wait_for = child;
   }else if(pid > 0 && get_parent(pid) == current->pid){
     current->wait_for = pid;
   }else {
     return -1;
   }
-  insert_to_block_queue(current);
+  current->status = BLOCKED;
   schedule();
-  return 0;
+  return current->wait_for;
 }
 //
 // [a0]: the syscall number; [a1] ... [a7]: arguments to the syscalls.
