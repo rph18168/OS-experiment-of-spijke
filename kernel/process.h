@@ -89,6 +89,9 @@ typedef struct process_t {
 
   // accounting. added @lab3_3
   int tick_count;
+
+  // wait for child process. added @lab3_challenge1
+  uint64 wait_for;
 }process;
 
 // switch to run user app
@@ -102,6 +105,12 @@ process* alloc_process();
 int free_process( process* proc );
 // fork a child from parent
 int do_fork(process* parent);
+// get parent pid
+uint64 get_parent(uint64 pid);
+// check if there is active child
+uint64 has_active_child(uint64 pid);
+// for wait
+void insert_to_block_queue(process* proc);
 
 // current running process
 extern process* current;
