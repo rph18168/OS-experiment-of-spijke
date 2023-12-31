@@ -100,7 +100,7 @@ ssize_t sys_user_yield() {
 uint64 sys_user_wait(uint64 pid) {
   uint64 child;
   if(pid == -1 && (child = has_active_child(current->pid)) != -1) {
-    current->wait_for = child;
+    current->wait_for = -1;
   }else if(pid > 0 && get_parent(pid) == current->pid){
     current->wait_for = pid;
   }else {
@@ -108,7 +108,7 @@ uint64 sys_user_wait(uint64 pid) {
   }
   current->status = BLOCKED;
   schedule();
-  return current->wait_for;
+  return 0;
 }
 //
 // [a0]: the syscall number; [a1] ... [a7]: arguments to the syscalls.
