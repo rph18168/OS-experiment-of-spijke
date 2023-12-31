@@ -41,20 +41,12 @@ ssize_t sys_user_backtrace(uint64 depth,riscv_regs* regp){
     return 0;
 
   char funname[256];
-  uint64 fp=regp->s0-16;
-  // for(int i=0;i<16;i++){
-  //   sprint("%x %x\n",fp+8*i,*(uint64*)(fp+8*i));
-  // }
-
-  fp=regp->s0;
+  uint64 fp = regp->s0;
   uint64 faddr;
 
-  //sprint("%x\n",fp-8);
   fp=*(uint64*)(fp-8);
-  //sprint("%x\n",fp-8);
   faddr=*(uint64*)(fp-8);
-  //sprint("func addr :%x\n",faddr);
-  //get_name_from_addr(regp->ra,funname);
+
   get_name_from_addr(faddr,funname);
   sprint("%s\n",funname);
   if(strcmp("main",funname)==0)
@@ -63,10 +55,8 @@ ssize_t sys_user_backtrace(uint64 depth,riscv_regs* regp){
 
   while(depth){
     fp=*(uint64*)(fp-16);
-    //sprint("%x\n",fp);
     faddr=*(uint64*)(fp-8);
-    //sprint("func addr :%x\n",faddr);
-    //get_name_from_addr(regp->ra,funname);
+    
     get_name_from_addr(faddr,funname);
     sprint("%s\n",funname);
     if(strcmp("main",funname)==0)
