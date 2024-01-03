@@ -30,6 +30,11 @@ void get_dentry_name(struct dentry *cwd, char *pathpa, uint64 *pos){
     (*pos)++;
     i++;
   }
+  if(pathpa[*pos - 1] != '/')
+  {
+    pathpa[*pos] = '/';
+    (*pos)++;
+  }
   return;
 }
 
@@ -262,10 +267,9 @@ ssize_t sys_user_rcwd(char* pathva){
   char* pathpa = (char*)user_va_to_pa((pagetable_t)(current->pagetable), pathva);
   uint64 pos = 0;
   get_dentry_name(current->pfiles->cwd, pathpa, &pos);
-  pathpa[pos] = '\0';
-  // char path[30] = "abc";
-  // if(current->pfiles->cwd->parent == NULL)
-  //   sprint(path);
+  if(pos != 1)
+    pathpa[pos - 1] = '\0';
+
   return 0;
 }
 
