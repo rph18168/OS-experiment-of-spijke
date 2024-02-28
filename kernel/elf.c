@@ -284,4 +284,44 @@ void load_bincode_from_host_elf(process *p) {
   spike_file_close( info.f );
 
   sprint("Application program entry point (virtual address): 0x%lx\n", p->trapframe->epc);
+
+  if(load_debugline(&elfloader)!=EL_OK) panic("load debugline failed!\n");
+}
+
+elf_status load_debugline(elf_ctx *ctx)
+{
+  int i,off;
+
+  //claim string table header
+  elf_sect_header strtab;
+  //get string table header's info
+  off = ctx->ehdr.shoff;
+  off += sizeof(strtab) * (ctx->ehdr.shstrndx);
+  if(elf_fpread(ctx,(void*)&strtab, sizeof(strtab), off) != sizeof(strtab)) panic("string table header get failed!\n");
+  //save string table
+  static char strtab_info[STRTAB_MAX];
+  if (elf_fpread(ctx,(void*)strtab_info,strtab.size, strtab.offset) != strtab.size) panic("string table get failed!\n");
+
+  //get .debug_line segment
+  elf_sect_header debugseg;
+  for(i=0, off=ctx->ehdr.shoff; i<ctx->ehdr.shnum; i++, off+=sizeof(debugseg))
+  {
+    if(elf_fpread(ctx,(void*)&debugseg, sizeof(elf_sect_header), off) != sizeof(elf_sect_header)) panic("debug header get failed!\n");
+    if(strcmp((char*)(strtab_info + debugseg.name),".debug_line")==0) break;
+  }
+
+  if(i == ctx->ehdr.shnum){
+    panic("can't find debugline!\n");
+    return EL_ERR;
+  } 
+
+  //get debugline's information
+
+  static char debugline[DEBUGLINE_MAX];
+
+  if(elf_fpread(ctx,(void*)debugline,debugseg.size,debugseg.offset)!=debugseg.size) panic("debugline get failed!\n");
+
+  make_addr_line(ctx,debugline,debugseg.size);
+
+  return EL_OK;
 }
