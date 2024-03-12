@@ -49,6 +49,13 @@ void load_user_program(process *proc) {
   proc->kstack = (uint64)alloc_page() + PGSIZE;   //user kernel stack top
   uint64 user_stack = (uint64)alloc_page();       //phisical address of user stack bottom
 
+  // 为堆管理结构分配内存
+  proc->heap_management = (heap_management *)alloc_page();
+  // 初始化堆管理结构
+  proc->heap_management->num = 0;
+  proc->heap_management->h_end = USER_FREE_ADDRESS_START;
+
+//   sprint("%lx %lx %lx %lx\n", proc->trapframe, proc->pagetable, proc->kstack, user_stack);
   // USER_STACK_TOP = 0x7ffff000, defined in kernel/memlayout.h
   proc->trapframe->regs.sp = USER_STACK_TOP;  //virtual address of user stack top
 
@@ -71,6 +78,10 @@ void load_user_program(process *proc) {
   // here, we assume that the size of usertrap.S is smaller than a page.
   user_vm_map((pagetable_t)proc->pagetable, (uint64)trap_sec_start, PGSIZE, (uint64)trap_sec_start,
          prot_to_type(PROT_READ | PROT_EXEC, 0));
+
+  // added @lab2_challenge2. map heap_management in user space (direct mapping as in kernel space).
+  user_vm_map((pagetable_t)proc->pagetable, (uint64)proc->heap_management, PGSIZE, (uint64)proc->heap_management,
+         prot_to_type(PROT_WRITE | PROT_READ, 0));
 }
 
 //

@@ -181,6 +181,11 @@ typedef struct riscv_regs_t {
   /* 240 */ uint64 t6;
 }riscv_regs;
 
+// added @lab2_challenge2
+#define PGROUNDUP(sz)  (((sz)+PGSIZE-1) & ~(PGSIZE-1)) //使之向上舍入到最近的PGSIZE的倍数，页对齐
+#define PGROUNDDOWN(a) (((a)) & ~(PGSIZE-1))           //使之向下舍入到最近的PGSIZE的倍数，页对齐
+#define MAX_HEAP_SIZE 0x128
+
 // following lines are added @lab2_1
 static inline void flush_tlb(void) { asm volatile("sfence.vma zero, zero"); }
 #define PGSIZE 4096  // bytes per page
