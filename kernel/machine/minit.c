@@ -5,6 +5,7 @@
 #include "util/types.h"
 #include "kernel/riscv.h"
 #include "kernel/config.h"
+#include "../sync_utils.h"
 #include "spike_interface/spike_utils.h"
 
 //
@@ -16,6 +17,9 @@
 // labs.
 //
 __attribute__((aligned(16))) char stack0[4096 * NCPU];
+
+// 计数器, add@lab1_challenge3
+volatile int counter = 0;
 
 // sstart() is the supervisor state entry point defined in kernel/kernel.c
 extern void s_start();
@@ -91,15 +95,21 @@ void timerinit(uintptr_t hartid) {
 // m_start: machine mode C entry point.
 //
 void m_start(uintptr_t hartid, uintptr_t dtb) {
+  if(hartid == 0){
   // init the spike file interface (stdin,stdout,stderr)
   // functions with "spike_" prefix are all defined in codes under spike_interface/,
   // sprint is also defined in spike_interface/spike_utils.c
   spike_file_init();
-  sprint("In m_start, hartid:%d\n", hartid);
-
+  
   // init HTIF (Host-Target InterFace) and memory by using the Device Table Blob (DTB)
   // init_dtb() is defined above.
   init_dtb(dtb);
+  }
+
+  // 实现同步
+  sync_barrier(&counter, NCPU);
+  sprint("In m_start, hartid:%d\n", hartid);
+  write_tp(hartid);
 
   // save the address of trap frame for interrupt in M mode to "mscratch". added @lab1_2
   write_csr(mscratch, &g_itrframe);

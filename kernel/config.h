@@ -8,6 +8,7 @@
 #define TIMER_INTERVAL 1000000
 
 #define DRAM_BASE 0x80000000
+#define STACK_SIZE 0x500000
 
 /* we use fixed physical (also logical) addresses for the stacks and trap frames as in
  Bare memory-mapping mode */
